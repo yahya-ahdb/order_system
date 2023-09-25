@@ -50,62 +50,56 @@ router.get("/", verifyAdmin, async (req, res) => {
     res.status(500).send(error);
   }
 });
-
 router.get("/getYear", verifyAdmin, async (req, res) => {
   try {
     const today = new Date();
     const currentYear = today.getFullYear();
+
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const results = await Promise.all(
+    const countsByMonth = await Promise.all(
       months.map(async (month) => {
         const firstDayOfMonth = new Date(currentYear, month - 1, 1);
         const lastDayOfMonth = new Date(currentYear, month, 0);
 
-        const [ordersInMonth, profitInMonth] = await Promise.all([
-          orderModel.find({
-            createdAt: {
-              $gte: firstDayOfMonth,
-              $lte: lastDayOfMonth,
-            },
-          }),
-          orderModel.aggregate([
-            {
-              $match: {
-                createdAt: {
-                  $gte: firstDayOfMonth,
-                  $lte: lastDayOfMonth,
-                },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                totalProfit: {
-                  $sum: {
-                    $multiply: ["$qty", "$price"],
-                  },
-                },
-              },
-            },
-          ]),
-        ]);
-
-        const count = ordersInMonth.length;
-        const revenue = profitInMonth[0]?.totalProfit || 0;
+        const ordersInMonth = await orderModel.find({
+          createdAt: {
+            $gte: firstDayOfMonth,
+            $lte: lastDayOfMonth,
+          },
+        });
 
         return {
-          order: {month,
-            count,}
-          ,revenue :{
-            month,
-            revenue,
-          }
+          month,
+          count: ordersInMonth.length,
+        };
+      })
+    );
+    const countsByMonthPrice = await Promise.all(
+      months.map(async (month) => {
+        const firstDayOfMonth = new Date(currentYear, month - 1, 1);
+        const lastDayOfMonth = new Date(currentYear, month, 0);
+
+        const ordersInMonth = await orderModel.find({
+          createdAt: {
+            $gte: firstDayOfMonth,
+            $lte: lastDayOfMonth,
+          },
+        });
+
+        let profitInMonth = 0;
+        for (const order of ordersInMonth) {
+          const orderProfit = order.qty * order.price;
+          profitInMonth += orderProfit;
+        }
+        return {
+          month,
+          count: profitInMonth,
         };
       })
     );
 
-    res.status(200).json({ order: results });
+    res.status(200).json({ order: countsByMonth , revenue: countsByMonthPrice });
   } catch (error) {
     res.status(500).send(error);
   }
