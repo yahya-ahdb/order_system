@@ -13,12 +13,26 @@ router.get("/", verifyAdmin, async (req, res) => {
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const orders = await orderModel.find({
-      createdAt: {
-        $gte: firstDayOfMonth,
-        $lte: lastDayOfMonth,
-      },
-    });
+    const [orders, clients, products] = await Promise.all([
+      orderModel.find({
+        createdAt: {
+          $gte: firstDayOfMonth,
+          $lte: lastDayOfMonth,
+        },
+      }),
+      clientModel.countDocuments({
+        createdAt: {
+          $gte: firstDayOfMonth,
+          $lte: lastDayOfMonth,
+        },
+      }),
+      productModel.countDocuments({
+        createdAt: {
+          $gte: firstDayOfMonth,
+          $lte: lastDayOfMonth,
+        },
+      }),
+    ]);
 
     let totalProfit = 0;
     for (const order of orders) {
@@ -26,21 +40,12 @@ router.get("/", verifyAdmin, async (req, res) => {
       totalProfit += orderProfit;
     }
 
-    const countClient = await clientModel.countDocuments({
-      createdAt: {
-        $gte: firstDayOfMonth,
-        $lte: lastDayOfMonth,
-      },
+    res.status(200).send({
+      order: orders.length,
+      product: products,
+      client: clients,
+      revenue: totalProfit,
     });
-    const countProduct = await productModel.countDocuments({
-      createdAt: {
-        $gte: firstDayOfMonth,
-        $lte: lastDayOfMonth,
-      },
-    });
-    const countOrder = orders.length;
-
-    res.status(200).send({ order: countOrder, product: countProduct, client: countClient, revenue : totalProfit });
   } catch (error) {
     res.status(500).send(error);
   }
@@ -50,52 +55,57 @@ router.get("/getYear", verifyAdmin, async (req, res) => {
   try {
     const today = new Date();
     const currentYear = today.getFullYear();
-
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const countsByMonth = await Promise.all(
+    const results = await Promise.all(
       months.map(async (month) => {
         const firstDayOfMonth = new Date(currentYear, month - 1, 1);
         const lastDayOfMonth = new Date(currentYear, month, 0);
 
-        const ordersInMonth = await orderModel.find({
-          createdAt: {
-            $gte: firstDayOfMonth,
-            $lte: lastDayOfMonth,
-          },
-        });
+        const [ordersInMonth, profitInMonth] = await Promise.all([
+          orderModel.find({
+            createdAt: {
+              $gte: firstDayOfMonth,
+              $lte: lastDayOfMonth,
+            },
+          }),
+          orderModel.aggregate([
+            {
+              $match: {
+                createdAt: {
+                  $gte: firstDayOfMonth,
+                  $lte: lastDayOfMonth,
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalProfit: {
+                  $sum: {
+                    $multiply: ["$qty", "$price"],
+                  },
+                },
+              },
+            },
+          ]),
+        ]);
+
+        const count = ordersInMonth.length;
+        const revenue = profitInMonth[0]?.totalProfit || 0;
 
         return {
-          month,
-          count: ordersInMonth.length,
+          order: {month,
+            count,}
+          ,revenue :{
+            month,
+            revenue,
+          }
         };
       })
     );
-    const countsByMonthPrice = await Promise.all(
-      months.map(async (month) => {
-        const firstDayOfMonth = new Date(currentYear, month - 1, 1);
-        const lastDayOfMonth = new Date(currentYear, month, 0);
 
-        const ordersInMonth = await orderModel.find({
-          createdAt: {
-            $gte: firstDayOfMonth,
-            $lte: lastDayOfMonth,
-          },
-        });
-
-        let profitInMonth = 0;
-        for (const order of ordersInMonth) {
-          const orderProfit = order.qty * order.price;
-          profitInMonth += orderProfit;
-        }
-        return {
-          month,
-          count: profitInMonth,
-        };
-      })
-    );
-
-    res.status(200).json({ order: countsByMonth , revenue: countsByMonthPrice });
+    res.status(200).json({ order: results });
   } catch (error) {
     res.status(500).send(error);
   }
