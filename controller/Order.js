@@ -5,8 +5,8 @@ const xlsx = require('xlsx');
 
 exports.getTitles = async (req, res) => {
     try {
-      const titles = await orderModel.find({}, 'title');
-      res.status(200).json({ data: titles });
+      const phone = await orderModel.find({}, 'phone');
+      res.status(200).json({ data: phone });
     } catch (error) {
       res.status(500).send(error);
     }
@@ -40,13 +40,26 @@ exports.getOrders = async (req, res) => {
             status: {
               $in: [qCategory],
             },
-          })
+          }).sort({ createdAt: -1 })
           .skip(skip)
           .limit(pageSize);
-      } else {
+      } 
+      else if (req.query.paymentStatus) {
+        const paymentStatus = req.query.paymentStatus;
+        orders = await orderModel
+          .find({
+            ...query,
+            paymentStatus: {
+              $in: [paymentStatus],
+            },
+          }).sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(pageSize);
+      } 
+      else {
         orders = await orderModel
           .find(query)
-          .skip(skip)
+          .skip(skip).sort({ createdAt: -1 })
           .limit(pageSize);
       }
   
@@ -135,7 +148,7 @@ exports.GetDataPdf = async (req, res) => {
     
         const formattedData = data.map(item => ({
           ...item,
-          Total : (item.price *item.qty)  ,
+          options: item.options.map((opt) => ` ${opt.product} || ${opt.color} || ${opt.size} || ${opt.qty} || ${opt.price} ,\n`).join(', '),
           createdAt: format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm:ss'),
           updatedAt: format(new Date(item.updatedAt), 'yyyy-MM-dd HH:mm:ss'),
         }));

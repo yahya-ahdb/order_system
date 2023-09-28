@@ -36,8 +36,7 @@ router.get("/", verifyAdmin, async (req, res) => {
 
     let totalProfit = 0;
     for (const order of orders) {
-      const orderProfit = order.qty * order.price;
-      totalProfit += orderProfit;
+      totalProfit += +(order.total);
     }
 
     res.status(200).send({
@@ -89,8 +88,7 @@ router.get("/getYear", verifyAdmin, async (req, res) => {
 
         let profitInMonth = 0;
         for (const order of ordersInMonth) {
-          const orderProfit = order.qty * order.price;
-          profitInMonth += orderProfit;
+          profitInMonth += +(order.total);
         }
         return {
           month,

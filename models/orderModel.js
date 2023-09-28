@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 
 const OrderShema = new mongoose.Schema({
-    title : {
+    phone :{
         type :String,
         required : true
     },
@@ -22,11 +22,7 @@ const OrderShema = new mongoose.Schema({
         type :String,
         required : true
     },
-    qty : {
-        type :String,
-        required : true
-    },
-    price : {
+    total : {
         type :String,
         required : true
     },
@@ -34,6 +30,18 @@ const OrderShema = new mongoose.Schema({
         type :String,
         required : true
     },
+    company : {
+        type :String,
+        required : true
+    },
+    options :{
+        type :Array,
+        required : true
+    },
+    paymentStatus :{
+        type :String,
+        default :"unpaid"
+    }
 }, {timestamps : true})
 
 module.exports = mongoose.model("Orders",OrderShema)

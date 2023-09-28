@@ -1,15 +1,15 @@
-const clientModel = require("../models/clientModel");
+const companyModel = require("../models/companyModel");
 
 exports.getName = async (req, res) => {
     try {
-      const name = await clientModel.find({}, 'name phone');
+      const name = await companyModel.find({}, 'name phone');
       res.status(200).json({ data: name });
     } catch (error) {
       res.status(500).send(error);
     }
   };
 
-exports.getClients = async (req, res) => {
+exports.getCompany = async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
       const pageSize = parseInt(req.query.pageSize) || 8;
@@ -20,55 +20,57 @@ exports.getClients = async (req, res) => {
       if (searchTitle) {
         query.$text = { $search: searchTitle };
       }
-      let client;
+      let company;
   
       if (req.query.new) {
-        client = await clientModel
+        company = await companyModel
           .find(query)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(pageSize);
-      } else if (req.query.status) {
-        const qCategory = req.query.status;
-        client = await clientModel
+        } else if (req.query.status) {
+          const qCategory = req.query.status;
+          company = await companyModel
           .find({
             ...query,
             status: {
               $in: [qCategory],
             },
           })
+          .sort({ createdAt: -1 })
           .skip(skip)
           .limit(pageSize);
-      } else {
-        client = await clientModel
+        } else {
+          company = await companyModel
           .find(query)
+          .sort({ createdAt: -1 })
           .skip(skip)
           .limit(pageSize);
       }
   
-      const totalCleints = await clientModel.countDocuments(query);
+      const totalCleints = await companyModel.countDocuments(query);
       const lastPage = Math.ceil(totalCleints / pageSize);
       
-      res.status(200).json({ data: client, totalCleints, lastPage });
+      res.status(200).json({ data: company, totalCleints, lastPage });
     } catch (error) {
       res.status(500).send(error);
     }
   };
   
 
-exports.createClient = async (req, res) => {
+exports.createCompany = async (req, res) => {
   try {
-    const newCleint = await new clientModel({ ...req.body });
-    await newCleint.save();
+    const newCompany = await new companyModel({ ...req.body });
+    await newCompany.save();
     res.status(201).send("Created");
   } catch (error) {
     res.status(500).send(error);
   }
 };
 
-exports.updateClient = async (req, res) => {
+exports.updateCompany = async (req, res) => {
   try {
-    await clientModel.findByIdAndUpdate(
+    await companyModel.findByIdAndUpdate(
       req.params.id,
       { $set: { ...req.body } },
       { new: true }
@@ -79,9 +81,9 @@ exports.updateClient = async (req, res) => {
   }
 };
 
-exports.deleteClient = async (req, res) => {
+exports.deleteCompany = async (req, res) => {
   try {
-    await clientModel.findByIdAndDelete(req.params.id);
+    await companyModel.findByIdAndDelete(req.params.id);
     res.status(200).send("Deleted");
   } catch (error) {
     res.status(500).send(error);

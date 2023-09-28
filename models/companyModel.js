@@ -1,15 +1,7 @@
 const mongoose = require("mongoose")
 
 const CompanyShema = new mongoose.Schema({
-    title : {
-        type :String,
-        required : true
-    },
-    address : {
-        type :String,
-        required : true
-    },
-    secondary_address : {
+    name : {
         type :String,
         required : true
     },
@@ -18,6 +10,14 @@ const CompanyShema = new mongoose.Schema({
         required : true
     },
     phone  : {
+        type :String,
+        required : true
+    },
+    address : {
+        type :String,
+        required : true
+    },
+    secondary_address : {
         type :String,
     },
 }, {timestamps : true})

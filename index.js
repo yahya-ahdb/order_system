@@ -8,6 +8,7 @@ const productRoute = require("./routes/Product")
 const clientRoute = require("./routes/Client")
 const categoryRoute = require("./routes/Category")
 const countRoute = require("./routes/Count")
+const companyRoute = require("./routes/Company")
 
 
 dotenv.config()
@@ -29,6 +30,7 @@ app.use("/api/client", clientRoute)
 app.use("/api/product", productRoute)
 app.use("/api/category", categoryRoute)
 app.use("/api/analytic", countRoute)
+app.use("/api/company", companyRoute)
 
 const PORT = process.env.PORT || 8000
 app.listen(PORT,(req,res)=>{

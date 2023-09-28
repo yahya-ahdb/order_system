@@ -17,6 +17,10 @@ const ProductShema = new mongoose.Schema({
         type :String,
         required : true
     },
+    options  : {
+        type :Array,
+        required : true
+    },
 }, {timestamps : true})
 
 module.exports = mongoose.model("Products",ProductShema)
